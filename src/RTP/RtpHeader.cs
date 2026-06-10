@@ -42,6 +42,8 @@ namespace RTP
         private const ushort PayloadTypeMaskReset = 0xFF80;
 
         private const ushort PayloadTypeMaskGet = (ushort)0b0000_0000_0111_1111;
+
+        public const int HeaderSize = 12;
         #endregion
 
         /// <summary>
