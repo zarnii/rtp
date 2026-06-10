@@ -51,6 +51,8 @@ namespace RTP
                 : ssrc;
 
             _timestamp = GenerateRandomUint32Number();
+            _sequenceNumber = (ushort)RandomNumberGenerator.GetInt32(0, ushort.MaxValue);
+            
 
             _pool = ArrayPool<byte>.Create();
         }
