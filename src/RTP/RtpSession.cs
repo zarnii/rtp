@@ -57,6 +57,12 @@ namespace RTP
             _pool = ArrayPool<byte>.Create();
         }
 
+        ~RtpSession()
+        {
+            _socket.Shutdown(SocketShutdown.Both);
+            _socket.Close();
+        }
+
         public async Task Send(Memory<byte> samples, RtpPayloadType codec, int samplingRate, int durationMs)
         { 
             var header = new RtpHeader()
