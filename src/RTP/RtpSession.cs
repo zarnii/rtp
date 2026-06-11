@@ -89,11 +89,11 @@ namespace RTP
              * Pool.FreeBuffer(buffer);
             */
 
-            var buffer = _pool.Rent(RtpHeader.HeaderSize + samples.Length);
-            var headerBuffer = new ArraySegment<byte>(buffer, 0, RtpHeader.HeaderSize);
+            var buffer = _pool.Rent(RtpHeader.FixedHeaderSize + samples.Length);
+            var headerBuffer = new ArraySegment<byte>(buffer, 0, RtpHeader.FixedHeaderSize);
             
-            header.GetBytes(headerBuffer);
-            samples.CopyTo(new ArraySegment<byte>(buffer, RtpHeader.HeaderSize, samples.Length));
+            header.GetNetworkOrderBytes(headerBuffer);
+            samples.CopyTo(new ArraySegment<byte>(buffer, RtpHeader.FixedHeaderSize, samples.Length));
 
             await _socket.SendToAsync(buffer, _destinationEndpoint);
 

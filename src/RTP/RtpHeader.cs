@@ -1,5 +1,4 @@
-﻿using BinaryDebugLibrary;
-using System;
+﻿using System;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
@@ -13,41 +12,90 @@ namespace RTP
     public struct RtpHeader
     {
         #region consts
-        private readonly ushort VersionMaskReset = 0x3F;
+        /// <summary>
+        /// Битовая маска сброса битов версии.
+        /// </summary>
+        private const ushort VersionMaskReset = 0x3F;
 
-        private readonly ushort PaddingMaskGet = BinaryPrimitives.ReverseEndianness((ushort)0b0010_0000_0000_0000);
+        /// <summary>
+        /// Битовая маска для получения битов заполнения.
+        /// </summary>
+        private const ushort PaddingMaskGet = 0b0010_0000_0000_0000;
 
-        private readonly ushort PaddingMaskSetTrue = BinaryPrimitives.ReverseEndianness((ushort)0b0010_0000_0000_0000);
+        /// <summary>
+        /// Битовая маска для установки значения заполния в true.
+        /// </summary>
+        private const ushort PaddingMaskSetTrue = 0b0010_0000_0000_0000;
 
-        private readonly ushort PaddingMaskSetFalse = BinaryPrimitives.ReverseEndianness((ushort)0b1101_1111_1111_1111);
+        /// <summary>
+        /// Битовая маска для установки значения заполнения в false.
+        /// </summary>
+        private const ushort PaddingMaskSetFalse = 0b1101_1111_1111_1111;
 
-        private readonly ushort ExtensionMaskGet = BinaryPrimitives.ReverseEndianness((ushort)0b0001_0000_0000_0000);
+        /// <summary>
+        /// Битовая маска для получения битов расширения.
+        /// </summary>
+        private const ushort ExtensionMaskGet = 0b0001_0000_0000_0000;
 
-        private readonly ushort ExtensionMaskSetTrue = BinaryPrimitives.ReverseEndianness((ushort)0b0001_0000_0000_0000);
+        /// <summary>
+        /// Битовая маска для установки значения расширения в true.
+        /// </summary>
+        private const ushort ExtensionMaskSetTrue = 0b0001_0000_0000_0000;
 
-        private readonly ushort ExtensionMaskSetFalse = BinaryPrimitives.ReverseEndianness((ushort)0b1110_1111_1111_1111);
+        /// <summary>
+        /// Битовая маска для установки значения расширения в false.
+        /// </summary>
+        private const ushort ExtensionMaskSetFalse = 0b1110_1111_1111_1111;
 
+        /// <summary>
+        /// Максимальное количество источников вклада.
+        /// </summary>
         private const int CsrcMaxCount = 15;
 
+        /// <summary>
+        /// Битовая маска сброса битов количества источников вклада.
+        /// </summary>
         private const ushort CsrcMaskReset = 0xF0FF;
 
+        /// <summary>
+        /// Битовая маска для получения битов количества источников вклада.
+        /// </summary>
         private const ushort CsrcMaskGet = 0b0000_1111_0000_0000;
 
-        private readonly ushort MarkerMaskGet = BinaryPrimitives.ReverseEndianness((ushort)0b0000_0000_1000_0000);
+        /// <summary>
+        /// Битовая маска для получения битов маркера.
+        /// </summary>
+        private const ushort MarkerMaskGet = 0b0000_0000_1000_0000;
 
-        private readonly ushort MarkerMaskSetTrue = BinaryPrimitives.ReverseEndianness((ushort)0b0000_0000_1000_0000);
+        /// <summary>
+        /// Битовая маска для установки значения маркера в true.
+        /// </summary>
+        private const ushort MarkerMaskSetTrue = 0b0000_0000_1000_0000;
 
-        private readonly ushort MarkerMaskSetFalse = BinaryPrimitives.ReverseEndianness((ushort)0b1111_1111_0111_1111);
+        /// <summary>
+        /// Битовая маска для установки значения маркера в false.
+        /// </summary>
+        private const ushort MarkerMaskSetFalse = 0b1111_1111_0111_1111;
 
+        /// <summary>
+        /// Битовая маска сброса битов типа полезной нагрузки.
+        /// </summary>
         private const ushort PayloadTypeMaskReset = 0xFF80;
 
-        private const ushort PayloadTypeMaskGet = (ushort)0b0000_0000_0111_1111;
+        /// <summary>
+        /// Битовая маска для получения битов полезной нагрузки.
+        /// </summary>
+        private const ushort PayloadTypeMaskGet = 0b0000_0000_0111_1111;
 
-        public const int HeaderSize = 12;
+        /// <summary>
+        /// Размер фиксированного заголовка в байтах.
+        /// Согласно RFC 3550 https://datatracker.ietf.org/doc/html/rfc3550#section-5.
+        /// </summary>
+        public const int FixedHeaderSize = 12;
         #endregion
 
         /// <summary>
-        /// Первые 16 бит заголовка. Хранится в сетевом порядке.
+        /// Первые 16 бит заголовка.
         /// В следующей последовательности в них кодируется:
         /// Version - 2 бита,
         /// Padding - 1 бит,
@@ -59,39 +107,39 @@ namespace RTP
         private ushort _first16bit;
 
         /// <summary>
-        /// Порядковый номер. Хранится в сетевом порядке.
+        /// Порядковый номер.
         /// </summary>
         private ushort _sequenceNumber;
 
         /// <summary>
-        /// Временная метка. Хранится в сетевом порядке.
+        /// Временная метка.
         /// </summary>
         private uint _timestamp;
 
         /// <summary>
-        /// Источник синхронизации. Хранится в сетевом порядке.
+        /// Источник синхронизации.
         /// </summary>
         private uint _ssrc;
 
+        /// <summary>
+        /// Версия протокола.
+        /// </summary>
         public int Version
         {
             get
             {
-                var hostEndian = BinaryPrimitives.ReverseEndianness(_first16bit);
-
-                return (ushort)(hostEndian >> 14);
+                return (ushort)(_first16bit >> 14);
             }
             set
             {
-                var hostEndian = BinaryPrimitives.ReverseEndianness(_first16bit);
-
-                hostEndian &= VersionMaskReset;
-                hostEndian |= (ushort)(value << 14);
-
-                _first16bit = BinaryPrimitives.ReverseEndianness(hostEndian);
+                _first16bit &= VersionMaskReset;
+                _first16bit |= (ushort)(value << 14);
             }
         }
 
+        /// <summary>
+        /// Заполнение.
+        /// </summary>
         public bool Padding
         {
             get
@@ -112,6 +160,9 @@ namespace RTP
             }
         }
 
+        /// <summary>
+        /// Расширение.
+        /// </summary>
         public bool Extension
         {
             get
@@ -131,26 +182,27 @@ namespace RTP
             }
         }
 
+        /// <summary>
+        /// Количество источников вклада (контрибуции).
+        /// </summary>
         public int CsrcCount
         {
             get
             {
-                var hostEndian = BinaryPrimitives.ReverseEndianness(_first16bit);
-                hostEndian &= CsrcMaskGet;
+                _first16bit &= CsrcMaskGet;
 
-                return hostEndian >> 8;
+                return _first16bit >> 8;
             }
             set
             {
-                var hostEndian = BinaryPrimitives.ReverseEndianness(_first16bit);
-
-                hostEndian &= CsrcMaskReset;
-                hostEndian |= (ushort)(value << 8);
-
-                _first16bit = BinaryPrimitives.ReverseEndianness(hostEndian);
+                _first16bit &= CsrcMaskReset;
+                _first16bit |= (ushort)(value << 8);
             }
         }
 
+        /// <summary>
+        /// Маркер.
+        /// </summary>
         public bool Marker
         {
             get
@@ -170,29 +222,25 @@ namespace RTP
             }
         }
 
+        /// <summary>
+        /// Тип полезной нагрузки.
+        /// </summary>
         public RtpPayloadType PayloadType
         {
             get
             {
-                var hostEndian = BinaryPrimitives.ReverseEndianness(_first16bit);
-
-                return (RtpPayloadType)(hostEndian & PayloadTypeMaskGet);
+                return (RtpPayloadType)(_first16bit & PayloadTypeMaskGet);
             }
             set
             {
-                Console.WriteLine(BinaryWriter.ConvertNumberToBinaryString(_first16bit));
-
-                var hostEndian = BinaryPrimitives.ReverseEndianness(_first16bit);
-
-                hostEndian &= PayloadTypeMaskReset;
-                hostEndian |= (ushort)value;
-
-                _first16bit = BinaryPrimitives.ReverseEndianness(hostEndian);
-
-                Console.WriteLine(BinaryWriter.ConvertNumberToBinaryString(_first16bit));
+                _first16bit &= PayloadTypeMaskReset;
+                _first16bit |= (ushort)value;
             }
         }
 
+        /// <summary>
+        /// Порядковый номер.
+        /// </summary>
         public ushort SequenceNumber
         {
             get
@@ -205,6 +253,9 @@ namespace RTP
             }
         }
 
+        /// <summary>
+        /// Временная метка.
+        /// </summary>
         public uint Timestamp
         {
             get
@@ -217,6 +268,9 @@ namespace RTP
             }
         }
 
+        /// <summary>
+        /// Источник синхронизации.
+        /// </summary>
         public uint Ssrc
         {
             get
@@ -229,24 +283,23 @@ namespace RTP
             }
         }
 
-        public RtpHeader()
-        {
-
-        }
-
-        public void GetBytes(in Memory<byte> buffer)
+        /// <summary>
+        /// Получение байтов заголовка в сетевом порядке.
+        /// </summary>
+        /// <param name="buffer">Буфер, в который будут записаны байты</param>
+        public void GetNetworkOrderBytes(in Memory<byte> buffer)
         {
             if (buffer.Length < 12)
             {
                 return;
             }
 
-            var memorySpan = buffer.Span;
+            var bufferSpan = buffer.Span;
 
-            BinaryPrimitives.WriteUInt16LittleEndian(memorySpan.Slice(0, 2), _first16bit);
-            BinaryPrimitives.WriteUInt16LittleEndian(memorySpan.Slice(2, 2), _sequenceNumber);
-            BinaryPrimitives.WriteUInt32LittleEndian(memorySpan.Slice(4, 4), _timestamp);
-            BinaryPrimitives.WriteUInt32LittleEndian(memorySpan.Slice(8, 4), _ssrc);
+            BinaryPrimitives.WriteUInt16BigEndian(bufferSpan.Slice(0, 2), _first16bit);
+            BinaryPrimitives.WriteUInt16BigEndian(bufferSpan.Slice(2, 2), _sequenceNumber);
+            BinaryPrimitives.WriteUInt32BigEndian(bufferSpan.Slice(4, 4), _timestamp);
+            BinaryPrimitives.WriteUInt32BigEndian(bufferSpan.Slice(8, 4), _ssrc);         
         }
     }
 }
