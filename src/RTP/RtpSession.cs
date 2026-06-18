@@ -12,7 +12,7 @@ namespace RTP
     /// взаимодействующих по протоколу RTP.
     /// https://datatracker.ietf.org/doc/html/rfc3550#section-3
     /// </summary>
-    public class RtpSession
+    public class RtpSession: IDisposable
     {
         private const int RtpVersionByDefault = 2;
 
@@ -59,8 +59,7 @@ namespace RTP
 
         ~RtpSession()
         {
-            _socket.Shutdown(SocketShutdown.Both);
-            _socket.Close();
+            Dispose();
         }
 
         public async Task Send(Memory<byte> samples, RtpPayloadType codec, int samplingRate, int durationMs)
@@ -104,6 +103,14 @@ namespace RTP
                 _sequenceNumber++;
                 _timestamp += (uint)(durationMs * samplingRate) / 1000;
             }
+        }
+
+        public void Dispose()
+        {
+            _socket.Shutdown(SocketShutdown.Both);
+            _socket.Close();
+
+            GC.SuppressFinalize(this);
         }
 
         private uint GenerateRandomUint32Number()
