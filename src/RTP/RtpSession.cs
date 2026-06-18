@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RTP
@@ -17,6 +18,8 @@ namespace RTP
         private const int RtpVersionByDefault = 2;
 
         private const int ContributingSourceCountByDefault = 0;
+
+        private const int MaxUdpDatagramSize = 65536;
 
         // Идентифицируется Источником синхронизации SSRC.
 
@@ -64,6 +67,28 @@ namespace RTP
             Dispose();
         }
 
+        public async Task StartReceive(Action<ArraySegment<byte>> onReceive, CancellationToken cancellationToken)
+        {
+
+            await Task.Run(async () =>
+            {
+                var buffer = _pool.Rent(MaxUdpDatagramSize);
+                var remoteEndpoint = new IPEndPoint(IPAddress.Any, 0);
+
+                while (!cancellationToken.IsCancellationRequested)
+                {
+
+                    var receiveResult = await _socket.ReceiveFromAsync(new ArraySegment<byte>(buffer), 
+                        remoteEndpoint, 
+                        cancellationToken);
+
+                    onReceive?.Invoke(new ArraySegment<byte>(buffer, 0, receiveResult.ReceivedBytes));
+                }
+
+                _pool.Return(buffer);
+            }, cancellationToken);
+        }
+
         public async Task Send(Memory<byte> samples, RtpPayloadType codec, int samplingRate, int durationMs)
         { 
             var header = new RtpHeader()
@@ -90,13 +115,14 @@ namespace RTP
              * Pool.FreeBuffer(buffer);
             */
 
-            var buffer = _pool.Rent(RtpHeader.FixedHeaderSize + samples.Length);
+            var packetSize = RtpHeader.FixedHeaderSize + samples.Length;
+            var buffer = _pool.Rent(packetSize);
             var headerBuffer = new ArraySegment<byte>(buffer, 0, RtpHeader.FixedHeaderSize);
             
             header.GetNetworkOrderBytes(headerBuffer);
             samples.CopyTo(new ArraySegment<byte>(buffer, RtpHeader.FixedHeaderSize, samples.Length));
 
-            await _socket.SendToAsync(buffer, _destinationEndpoint);
+            await _socket.SendToAsync(new ArraySegment<byte>(buffer, 0, packetSize), _destinationEndpoint);
 
             _pool.Return(buffer);
 
