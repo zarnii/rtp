@@ -189,9 +189,7 @@ namespace RTP
         {
             get
             {
-                _first16bit &= CsrcMaskGet;
-
-                return _first16bit >> 8;
+                return (_first16bit & CsrcMaskGet) >> 8;
             }
             set
             {
@@ -245,11 +243,11 @@ namespace RTP
         {
             get
             {
-                return BinaryPrimitives.ReverseEndianness(_sequenceNumber);
+                return _sequenceNumber;
             }
             set
             {
-                _sequenceNumber = BinaryPrimitives.ReverseEndianness(value);
+                _sequenceNumber = value;
             }
         }
 
@@ -260,11 +258,11 @@ namespace RTP
         {
             get
             {
-                return BinaryPrimitives.ReverseEndianness(_timestamp);
+                return _timestamp;
             }
             set
             {
-                _timestamp = BinaryPrimitives.ReverseEndianness(value);
+                _timestamp = value;
             }
         }
 
@@ -275,11 +273,11 @@ namespace RTP
         {
             get
             {
-                return BinaryPrimitives.ReverseEndianness(_ssrc);
+                return _ssrc;
             }
             set
             {
-                _ssrc = BinaryPrimitives.ReverseEndianness(value);
+                _ssrc = value;
             }
         }
 
