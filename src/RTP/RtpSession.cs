@@ -32,6 +32,8 @@ namespace RTP
 
         private readonly ArrayPool<byte> _pool;
 
+        private bool _isDisposed = false;
+
         public uint Ssrc
         {
             get
@@ -107,8 +109,14 @@ namespace RTP
 
         public void Dispose()
         {
+            if (!_isDisposed)
+            {
+                return;
+            }
+
             _socket.Shutdown(SocketShutdown.Both);
             _socket.Close();
+            _isDisposed = true;
 
             GC.SuppressFinalize(this);
         }
