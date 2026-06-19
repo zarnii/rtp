@@ -226,5 +226,39 @@ namespace RTPTest
 
             Assert.AreEqual(expectedPayloadType, header.PayloadType);
         }
+
+        [TestMethod]
+        public void RtpHeader_GetNetworkOrderBytes_Success(RtpHeader header, byte[] expectedBytes)
+        {
+            /*
+             var header = new RtpHeader()
+            {
+                Version = 2,
+                Padding = true,
+                Extension = true,
+                CsrcCount = 2,
+                Marker = true,
+                PayloadType = RtpPayloadType.Dynamic100,
+                SequenceNumber = 54,
+                Timestamp = uint.MaxValue,
+                Ssrc = 1
+            };
+             */
+            // 0xB2, 0xE4, 0x00, 0x36, 0x00, 0x00, 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF
+            // DynamicData
+
+            var actualBytes = new byte[RtpHeader.FixedHeaderSize];
+            header.GetNetworkOrderBytes(actualBytes);
+
+            CollectionAssert.AreEqual(actualBytes, expectedBytes);
+        }
+
+        [TestMethod]
+        public void RtpHeader_CreateFromNetworkOrderBytes_Success(Span<byte> bytes, RtpHeader expectedHeader)
+        {
+            var actualHeader = RtpHeader.CreateFromNetworkOrderBytes(bytes);
+
+            Assert.IsTrue(expectedHeader.Equals(actualHeader));
+        }
     }
 }

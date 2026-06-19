@@ -299,5 +299,32 @@ namespace RTP
             BinaryPrimitives.WriteUInt32BigEndian(bufferSpan.Slice(4, 4), _timestamp);
             BinaryPrimitives.WriteUInt32BigEndian(bufferSpan.Slice(8, 4), _ssrc);         
         }
+
+        /// <summary>
+        /// Создание RTP заголовка из байт в сетевом порядке.
+        /// </summary>
+        /// <param name="bytes">Батый в сетевом порядке.</param>
+        /// <returns>RTP заголовок.</returns>
+        public static RtpHeader CreateFromNetworkOrderBytes(Span<byte> bytes)
+        {
+            var header = new RtpHeader();
+
+            if (bytes.Length < FixedHeaderSize)
+            {
+                return header;
+            }
+
+            var first16bit = BitConverter.ToUInt16(bytes.Slice(0, 2));
+            var sequenceNumber = BitConverter.ToUInt16(bytes.Slice(2, 2));
+            var timestamp = BitConverter.ToUInt32(bytes.Slice(4, 4));
+            var ssrc = BitConverter.ToUInt32(bytes.Slice(8, 4));
+
+            header._first16bit = BinaryPrimitives.ReverseEndianness(first16bit);
+            header._sequenceNumber = BinaryPrimitives.ReverseEndianness(sequenceNumber);
+            header._timestamp = BinaryPrimitives.ReverseEndianness(timestamp);
+            header._ssrc = BinaryPrimitives.ReverseEndianness(ssrc);
+
+            return header;
+        }
     }
 }
