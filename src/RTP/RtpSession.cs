@@ -15,28 +15,60 @@ namespace RTP
     /// </summary>
     public class RtpSession: IDisposable
     {
+        /// <summary>
+        /// Версия RTP по умолчанию.
+        /// </summary>
         private const int RtpVersionByDefault = 2;
 
+        /// <summary>
+        /// Количество источников контрибуции по умолчанию.
+        /// </summary>
         private const int ContributingSourceCountByDefault = 0;
 
+        /// <summary>
+        /// Максимальный размер датаграммы UDP.
+        /// </summary>
         private const int MaxUdpDatagramSize = 65536;
 
-        // Идентифицируется Источником синхронизации SSRC.
-
+        /// <summary>
+        /// Источник синхронизации.
+        /// </summary>
         private readonly uint _ssrc;
 
+        /// <summary>
+        /// Временная метка.
+        /// </summary>
         private uint _timestamp;
 
+        /// <summary>
+        /// Порядковый номер.
+        /// </summary>
         private ushort _sequenceNumber;
 
+        /// <summary>
+        /// Локальный сокет.
+        /// </summary>
         private readonly Socket _socket;
 
+        /// <summary>
+        /// Эндпоинт клиента.
+        /// </summary>
         private IPEndPoint _destinationEndpoint;
 
+        /// <summary>
+        /// Пул массивов. Используется для аренды массивов для 
+        /// буферов получения и отправки данных.
+        /// </summary>
         private readonly ArrayPool<byte> _pool;
 
+        /// <summary>
+        /// Флаг, показывающий освобождены ли неуправляемые ресурсы.
+        /// </summary>
         private bool _isDisposed = false;
 
+        /// <summary>
+        /// Источник синхронизации.
+        /// </summary>
         public uint Ssrc
         {
             get
@@ -45,6 +77,12 @@ namespace RTP
             }
         }
 
+        /// <summary>
+        /// Конструктор.
+        /// </summary>
+        /// <param name="localEndpoint">Локальный эндпоинт, к которому привяжется сокет.</param>
+        /// <param name="destinationEndpoint">Эндпоинт клиента.</param>
+        /// <param name="ssrc">Источник синхронизации.</param>
         public RtpSession(IPEndPoint localEndpoint, IPEndPoint destinationEndpoint, uint ssrc = 0)
         {
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -62,11 +100,21 @@ namespace RTP
             _pool = ArrayPool<byte>.Create();
         }
 
+        /// <summary>
+        /// Деструктор.
+        /// </summary>
         ~RtpSession()
         {
             Dispose();
         }
 
+        /// <summary>
+        /// Запуск прослущивания входных пакетов.
+        /// </summary>
+        /// <param name="onReceive">Делегат, вызываемый при получении пакета.
+        ///                         В делегат передаются сырые данные.</param>
+        /// <param name="cancellationToken">Токен отмены.</param>
+        /// <returns></returns>
         public async Task StartReceive(Action<ArraySegment<byte>> onReceive, CancellationToken cancellationToken)
         {
 
@@ -89,6 +137,14 @@ namespace RTP
             }, cancellationToken);
         }
 
+        /// <summary>
+        /// Отправка данных.
+        /// </summary>
+        /// <param name="samples">Сэмлы, представляющие аудио или видео фрагмент.</param>
+        /// <param name="codec">Кодек, которым обработаны сэмлы.</param>
+        /// <param name="samplingRate">Частота дискретизации.</param>
+        /// <param name="durationMs">Длительность сэмплов в миллисекундах.</param>
+        /// <returns></returns>
         public async Task Send(Memory<byte> samples, RtpPayloadType codec, int samplingRate, int durationMs)
         { 
             var header = new RtpHeader()
@@ -103,17 +159,6 @@ namespace RTP
                 Timestamp = _timestamp,
                 Ssrc = _ssrc,
             };
-
-            // Создаем буфер или берем из пула для отправки данных.
-            /*
-             * var buffer = Pool.GetBuffer();
-             * buffer.AddHeader(header);
-             * buffer.AddPayload(samples);
-             * 
-             * _socket.SendTo(buffer)
-             * 
-             * Pool.FreeBuffer(buffer);
-            */
 
             var packetSize = RtpHeader.FixedHeaderSize + samples.Length;
             var buffer = _pool.Rent(packetSize);
@@ -133,6 +178,9 @@ namespace RTP
             }
         }
 
+        /// <summary>
+        /// Освобождение неуправляемых ресурсов.
+        /// </summary>
         public void Dispose()
         {
             if (!_isDisposed)
@@ -147,6 +195,10 @@ namespace RTP
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Создание криптографического случайного беззнакового 32х битного числа.
+        /// </summary>
+        /// <returns>Случайное беззнаковое 32х битное число.</returns>
         private uint GenerateRandomUint32Number()
         {
             var first16bit = RandomNumberGenerator.GetInt32(0, ushort.MaxValue);
