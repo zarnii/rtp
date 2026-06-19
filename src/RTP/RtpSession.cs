@@ -201,10 +201,10 @@ namespace RTP
         /// <returns>Случайное беззнаковое 32х битное число.</returns>
         private uint GenerateRandomUint32Number()
         {
-            var first16bit = RandomNumberGenerator.GetInt32(0, ushort.MaxValue);
-            var second16bit = RandomNumberGenerator.GetInt32(0, short.MaxValue);
+            Span<byte> randomBytes = stackalloc byte[4];
+            RandomNumberGenerator.Fill(randomBytes);
 
-            return (uint)((first16bit << 16) | second16bit);
+            return BitConverter.ToUInt32(randomBytes);
         }
     }
 }
