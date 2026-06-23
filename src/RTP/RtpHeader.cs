@@ -15,7 +15,7 @@ namespace RTP
         /// <summary>
         /// Битовая маска сброса битов версии.
         /// </summary>
-        private const ushort VersionMaskReset = 0x3F;
+        private const ushort VersionMaskReset = 0x3FFF;
 
         /// <summary>
         /// Битовая маска для получения битов заполнения.
@@ -144,7 +144,7 @@ namespace RTP
         {
             get
             {
-                return (_first16bit & PaddingMaskGet) > 1;
+                return (_first16bit & PaddingMaskGet) != 0;
             }
             set
             {
@@ -167,7 +167,7 @@ namespace RTP
         {
             get
             {
-                return (_first16bit & ExtensionMaskGet) > 1;
+                return (_first16bit & ExtensionMaskGet) != 0;
             }
             set
             {
@@ -205,7 +205,7 @@ namespace RTP
         {
             get
             {
-                return (_first16bit & MarkerMaskGet) > 1;
+                return (_first16bit & MarkerMaskGet) != 0;
             }
             set
             {
@@ -303,7 +303,7 @@ namespace RTP
         /// <summary>
         /// Создание RTP заголовка из байт в сетевом порядке.
         /// </summary>
-        /// <param name="bytes">Батый в сетевом порядке.</param>
+        /// <param name="bytes">Байты в сетевом порядке.</param>
         /// <returns>RTP заголовок.</returns>
         public static RtpHeader CreateFromNetworkOrderBytes(Span<byte> bytes)
         {
