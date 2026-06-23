@@ -16,11 +16,10 @@
             return String.Join(" ", bytes.Select((b) => Convert.ToString(b, 2).PadLeft(8, '0')));
         }
 
-        public static string ConvertBytesToBinaryString(Memory<byte> bytes)
+        public static string ConvertBytesToBinaryString(byte[] bytes)
         {
-            var bytesArray = bytes.ToArray();
 
-            return String.Join(" ", bytesArray.Select((b) => Convert.ToString(b, 2).PadLeft(8, '0')));
+            return String.Join(" ", bytes.Select((b) => Convert.ToString(b, 2).PadLeft(8, '0')));
         }
     }
 }
