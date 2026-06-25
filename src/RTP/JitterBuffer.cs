@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
 
 namespace RTP
 {
@@ -7,32 +9,24 @@ namespace RTP
     /// </summary>
     internal class JitterBuffer
     {
-        private readonly byte[] _buffer;
+        // Unwrapping long???
+        private Dictionary<RtpHeader, byte[]> _buffer;
+        private ArrayPool<byte> _pool;
 
-        /// <summary>
-        /// Событие, сигнализирующее о заполнении буфера.
-        /// </summary>
-        public event Action<byte[]>? OnBufferFillng;
-
-        /// <summary>
-        /// Конструктор.
-        /// </summary>
-        /// <param name="buffer">Буфер, в который будут кладываться сэмлы.</param>
-        public JitterBuffer(byte[] buffer)
+        public JitterBuffer()
         {
-            ArgumentNullException.ThrowIfNull(buffer, nameof(buffer));
-
-            _buffer = buffer;
+            _pool = ArrayPool<byte>.Create();
+            _buffer = new Dictionary<RtpHeader, byte[]>();
         }
 
-        public void ParseRawPacket(Span<byte> rawPacket)
+        public void Push(RtpHeader header, Span<byte> payload)
         {
-            if (rawPacket.Length < RtpHeader.FixedHeaderSize)
-            {
-                return; // ???
-            }
+            // paylod будет копироваться в какй-нибудь массив.
+        }
 
-
+        public RtpHeader? Pop(/*out*/ Span<byte> payload) 
+        {
+            return null;
         }
     }
 }
