@@ -7,7 +7,7 @@ namespace RTP
     /// <summary>
     /// Джиттер-буфер. Принмает пакеты из RTP сессии и сглаживает их.
     /// </summary>
-    internal class JitterBuffer
+    public class JitterBuffer
     {
         /// <summary>
         /// Буфферная задержка в миллисекундах.
@@ -26,7 +26,9 @@ namespace RTP
         /// </summary>
         private bool _isBuffering;
 
-        // Unwrapping long???
+        /// <summary>
+        /// Буфер.
+        /// </summary>
         private SortedSet<RtpPacket> _buffer;
 
         /// <summary>
@@ -48,10 +50,22 @@ namespace RTP
 
             _pool = ArrayPool<byte>.Create();
             _buffer = new SortedSet<RtpPacket>(new RtpPacketComparator());
+            _isBuffering = true;
         }
 
-        public void Push(RtpHeader header, Span<byte> payload)
+        /// <summary>
+        /// Передача полезной нагрузки в буфер.
+        /// </summary>
+        /// <param name="header">Заголовок.</param>
+        /// <param name="payload">Полезная нагрузка.</param>
+        /// <returns>True, если удалось передать данные в буфер. Иначе - false.</returns>
+        public bool Push(RtpHeader header, Span<byte> payload)
         {
+            if (!_isBuffering)
+            {
+                return false;
+            }
+
             var packet = new RtpPacket
             {
                 Header = header,
@@ -60,26 +74,42 @@ namespace RTP
 
             payload.CopyTo(packet.Payload);
             _buffer.Add(packet);
-
             _isBuffering = _buffer.Count * _frameDurationMs < _bufferDelayMs;
+
+            return true;
         }
 
-        public void Pop(RtpPacket[] packets) 
+        /// <summary>
+        /// Получение накопленных пакетов.
+        /// </summary>
+        /// <param name="packets">Список, в который будут скопированы пакеты.</param>
+        /// <returns>True, если удалось скопировать пакеты. Иначе - false.</returns>
+        public bool Pop(RtpPacket[] packets) 
         {
-            if (!_isBuffering)
+            if (_isBuffering)
             {
-                return;
+                return false;
             }
 
             if (packets.Length < _buffer.Count)
             {
-                return;
+                return false;
             }
+
+            _isBuffering = false;
+            var packetIndex = 0;
 
             foreach (var packet in _buffer)
             {
-
+                packet.CopyTo(ref packets[packetIndex]);
+                _pool.Return(packet.Payload);
+                packetIndex++;
             }
+
+            _buffer.Clear();
+            _isBuffering = true;
+
+            return true;
         }
     }
 }
